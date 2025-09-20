@@ -5,6 +5,13 @@ target-version = ["py311"]
 [tool.isort]
 profile = "black"
 line_length = 88
+skip = [
+    "env",
+    ".git",
+    "__pycache__",
+    "build",
+    "dist"
+]
 
 [tool.flake8]
 max-line-length = 88
