@@ -16,6 +16,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from interfaces import ResponseActivityModel
+
 load_dotenv()
 
 logger = logging.getLogger(__name__)
