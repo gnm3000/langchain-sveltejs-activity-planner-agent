@@ -21,13 +21,15 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 tools = []
 from langchain_core.tools import tool
 @tool
-def get_weather(city: str) -> str:
+async def get_weather(city: str) -> str:
     """Get the current weather in a given city."""
-    import requests
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={OPENWEATHERMAP_API_KEY}&units=metric"
-    response = requests.get(url)
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
     if response.status_code != 200:
         return f"Error: {response.status_code}, {response.text}"
+    
     data = response.json()
     weather = data["weather"][0]["description"]
     temperature = data["main"]["temp"]
@@ -69,7 +71,7 @@ async def lifespan_context_manager(app_instance: FastAPI):
                 You are a SmartCity Activity Planner. Your goal is to help users plan activities in a specified city.
                 Your answer must be in spanish language.
                 Follow these steps:
-                1.  When a user provides a city name, first use the `get_current_weather` tool to fetch the current weather conditions for that city.
+                1.  When a user provides a city name, first use the `get_weather` tool to fetch the current weather conditions for that city.
                 2.  Based on the weather conditions, suggest 3 to 5 appropriate activities.
                 3.  For each suggested activity, use the `search_activity_links_tavily` tool to find relevant information or official links. Query should be specific like "[Activity Name] [City] official website".
                 4.  Compile all the information (weather, 3-5 activity suggestions with their corresponding links/info from Tavily) into a single, concise, and user-friendly response.
@@ -148,7 +150,7 @@ async def get_activity(city: str):
         # Construct the input for the agent, matching the prompt's "{input}" variable
         agent_input = {"input": f"Provide activity suggestions for {city}."}
         
-        response = agent_executor.invoke(agent_input)
+        response = await agent_executor.ainvoke(agent_input)
         
         output = response.get("output")
         if output:
