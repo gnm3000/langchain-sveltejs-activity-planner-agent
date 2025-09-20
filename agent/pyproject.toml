@@ -27,7 +27,10 @@ exclude = [
 
 [tool.mypy]
 python_version = "3.11"
+mypy_path = "."
 ignore_missing_imports = true
+follow_imports = "skip"
+exclude = '(env/|__pycache__/|build/|dist/|.git/)'
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
