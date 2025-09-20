@@ -15,8 +15,7 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel
-
+from interfaces import ResponseActivityModel
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -50,9 +49,8 @@ def get_weather(city: str) -> str:
     data = response.json()
     weather = data["weather"][0]["description"]
     temperature = data["main"]["temp"]
-    return (
-        f"The current weather in {city} is {weather} with a temperature of {temperature}\u00b0C."
-    )
+    return f"The current weather in {city} is {weather} with a \
+        temperature of {temperature}\u00b0C."
 
 
 @tool
@@ -73,12 +71,17 @@ def search_activity_links_tavily(activity_query: str) -> str:
         for res in results:
             url = res.get("url", "N/A URL")
             content_snippet = res.get("content", "N/A Content")
-            if isinstance(content_snippet, str) and len(content_snippet) > MAX_CONTENT_SNIPPET_LENGTH:
-                content_snippet = content_snippet[: MAX_CONTENT_SNIPPET_LENGTH - 3] + "..."
+            if (
+                isinstance(content_snippet, str)
+                and len(content_snippet) > MAX_CONTENT_SNIPPET_LENGTH
+            ):
+                content_snippet = (
+                    content_snippet[: MAX_CONTENT_SNIPPET_LENGTH - 3] + "..."
+                )
             formatted_results.append(f"- Source: {url}\n  Snippet: {content_snippet}")
 
-        return (
-            f"Tavily search results for '{activity_query}':\n" + "\n".join(formatted_results)
+        return f"Tavily search results for '{activity_query}':\n" + "\n".join(
+            formatted_results
         )
     except Exception as exc:  # pragma: no cover - safeguard against Tavily failures
         return (
@@ -104,19 +107,10 @@ async def lifespan_context_manager(app_instance: FastAPI):
             openai_api_key=OPENAI_API_KEY,
         )
         tools = [get_weather, search_activity_links_tavily]
-        system_message = """
-                You are a SmartCity Activity Planner. Your goal is to help users plan activities in a specified city.
-                Your answer must be in spanish language.
-                Follow these steps:
-                1.  When a user provides a city name, first use the `get_weather` tool to fetch the current weather conditions for that city.
-                2.  Based on the weather conditions, suggest 3 to 5 appropriate activities.
-                3.  For each suggested activity, use the `search_activity_links_tavily` tool to find relevant information or official links.
-                4.  Compile all the information (weather, 3-5 activity suggestions with their corresponding links/info from Tavily) into a single, concise, and user-friendly response.
-                5.  If a tool fails or cannot find specific information, clearly state that in your response for that part, but try to complete the rest of the request.
-                6.  Do not make up weather information or links. Rely solely on the output from the tools.
-                7.  Present the final plan directly to the user.
-                8.  If the city name is ambiguous or missing, ask the user for clarification.
-                """
+        # read the file in prompts/system_message.txt
+        with open("prompts/system_prompt.md", "r", encoding="utf-8") as f:
+            system_message = f.read()
+
         prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", system_message),
@@ -131,7 +125,9 @@ async def lifespan_context_manager(app_instance: FastAPI):
             tools=tools,
             verbose=False,
             handle_parsing_errors=(
-                "An error occurred while parsing the agent's output. Please check the format and try again."
+                "An error occurred while parsing the \
+                    agent's output. Please check the format \
+                        and try again."
             ),
         )
         app_initialized_successfully = True
@@ -145,7 +141,8 @@ async def lifespan_context_manager(app_instance: FastAPI):
     else:
         app_instance.state.agent_executor = None
         logger.error(
-            "App failed to initialize properly. Endpoints will return an error if called."
+            "App failed to initialize properly. \
+                Endpoints will return an error if called."
         )
 
     yield
@@ -175,8 +172,6 @@ def read_root() -> Dict[str, str]:
     return {"Hello": "World"}
 
 
-from interfaces import ResponseActivityModel
-
 @app.get("/get-activity", response_model=ResponseActivityModel)
 async def get_activity(city: str) -> ResponseActivityModel:
     """Execute the planner agent to build an activity plan for the given city."""
@@ -184,7 +179,9 @@ async def get_activity(city: str) -> ResponseActivityModel:
     if not app_initialized_successfully or agent_executor is None:
         raise HTTPException(
             status_code=503,
-            detail="Service Unavailable: The planner agent is not initialized. Check server logs for errors.",
+            detail="Service Unavailable: \
+                The planner agent is not initialized. \
+                    Check server logs for errors.",
         )
 
     if not city.strip():
@@ -200,7 +197,9 @@ async def get_activity(city: str) -> ResponseActivityModel:
                 f"Hola, soy tu asesor de actividades. Aqui tienes un plan para {city}:"
             )
             logger.info("Sending plan for city: %s", city)
-            return ResponseActivityModel(city=city, greeting=friendly_greeting, plan=output)
+            return ResponseActivityModel(
+                city=city, greeting=friendly_greeting, plan=output
+            )
 
         error_message = (
             "Agent executed but did not produce a standard output. Raw response: "

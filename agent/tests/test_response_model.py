@@ -1,5 +1,5 @@
-
 from interfaces import ResponseActivityModel
+
 
 def test_response_activity_model_defaults() -> None:
     model = ResponseActivityModel(city="Madrid")
