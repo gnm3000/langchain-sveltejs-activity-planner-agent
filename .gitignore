@@ -1,6 +1,7 @@
 # Environment variables - DO NOT COMMIT YOUR API KEYS!
 .env
 env
+agent/env
 # Python virtual environment
 venv/
 __pycache__/

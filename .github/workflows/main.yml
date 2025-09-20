@@ -1,0 +1,63 @@
+name: CI/CD Pipeline Agent
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'agent/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'agent/**'
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        working-directory: ./agent
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8 mypy black bandit pytest
+
+      - name: Run Flake8 (Linting)
+        working-directory: ./agent
+        run: flake8 .
+
+      - name: Run Mypy (Type Checking)
+        working-directory: ./agent
+        run: mypy .
+
+      - name: Run Black (Formatting Check)
+        working-directory: ./agent
+        run: black --check .
+
+      - name: Run Bandit (Security Scan)
+        working-directory: ./agent
+        run: bandit -r .
+
+      - name: Run Pytest (Unit Tests)
+        working-directory: ./agent
+        run: pytest --maxfail=1 --disable-warnings -q
+
+  deploy:
+    needs: quality-checks
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to production
+        run: echo "Deployment commands go here"
