@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  agent:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    container_name: agent_service
+    #working_dir: /agent
+    volumes:
+      - ./agent:/app
+    command: python server.py
+    ports:
+      - "8000:8000"
+  
+  frontend:
+    build:
+      context: ./myapp
+      dockerfile: Dockerfile
+    container_name: frontend_service
+    #working_dir: /frontend
+    volumes:
+      - ./myapp:/app
+    command: npm start
+    ports:
+      - "3000:3000"
+
+  redis:
+    image: redis:6.2
+    container_name: redis_service
+    ports:
+      - "6379:6379"
