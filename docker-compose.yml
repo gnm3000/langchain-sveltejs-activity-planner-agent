@@ -23,6 +23,6 @@ services:
       - ./myapp:/app
     command: npm start
     ports:
-      - "3000:3000"
+      - "4173:4173"
 
   
